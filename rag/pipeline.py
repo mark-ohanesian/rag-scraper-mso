@@ -1,37 +1,28 @@
 
 import faiss
-import openai
 import os
 import numpy as np
 from typing import List, Dict
+from sentence_transformers import SentenceTransformer
+import requests
 
 class RAGPipeline:
-    def __init__(self, embedding_dim=1536):
+    def __init__(self, embedding_dim=768, embedding_model_name='all-MiniLM-L6-v2', ollama_url='http://localhost:11434'):  # 768 for MiniLM
         self.embedding_dim = embedding_dim
         self.index = faiss.IndexFlatL2(embedding_dim)
         self.texts = []
+        self.embedding_model = SentenceTransformer(embedding_model_name)
+        self.ollama_url = ollama_url
 
     def embed(self, texts: List[str]):
-        # Use OpenAI embeddings (openai>=1.0.0)
-        api_key = os.getenv('OPENAI_API_KEY')
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY environment variable not set.")
-        openai.api_key = api_key
+        # Use local sentence-transformers for embeddings
         try:
-            response = openai.embeddings.create(
-                input=texts,
-                model="text-embedding-ada-002"
-            )
-            # openai>=1.0.0 returns response.data as a list of dicts with 'embedding'
-            vectors = [d['embedding'] for d in response.data]
-            # Validate shape
-            valid_vectors = [v for v in vectors if isinstance(v, list) and len(v) == self.embedding_dim]
-            if len(valid_vectors) != len(texts):
-                print(f"Warning: {len(texts) - len(valid_vectors)} embeddings missing or invalid.")
-            # Pad missing vectors with zeros
-            while len(valid_vectors) < len(texts):
-                valid_vectors.append(np.zeros(self.embedding_dim).tolist())
-            return valid_vectors
+            vectors = self.embedding_model.encode(texts, show_progress_bar=False)
+            # Ensure shape is (n_texts, embedding_dim)
+            if len(vectors) == 0 or vectors.shape[1] != self.embedding_dim:
+                print(f"Embedding error: shape mismatch {vectors.shape}")
+                return [np.zeros(self.embedding_dim).tolist() for _ in texts]
+            return vectors
         except Exception as e:
             print(f"Embedding error: {e}")
             return [np.zeros(self.embedding_dim).tolist() for _ in texts]
@@ -46,21 +37,18 @@ class RAGPipeline:
         D, I = self.index.search(np.array([q_vec]).astype('float32'), top_k)
         return [self.texts[i] for i in I[0] if i < len(self.texts)]
 
-    def answer(self, question: str) -> str:
+    def answer(self, question: str, model='llama2') -> str:
         context = "\n".join(self.query(question))
-        api_key = os.getenv('OPENAI_API_KEY')
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY environment variable not set.")
-        openai.api_key = api_key
+        prompt = f"Use the provided context to answer.\nContext:\n{context}\n\nQuestion: {question}"
         try:
-            completion = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Use the provided context to answer."},
-                    {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"}
-                ]
+            response = requests.post(
+                f"{self.ollama_url}/api/generate",
+                json={"model": model, "prompt": prompt},
+                timeout=60
             )
-            return completion['choices'][0]['message']['content']
+            response.raise_for_status()
+            data = response.json()
+            return data.get('response', '').strip()
         except Exception as e:
             print(f"LLM error: {e}")
             return "Sorry, I couldn't answer the question."
