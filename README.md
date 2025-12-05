@@ -1,3 +1,4 @@
+
 # Reliable RAG Web Scraper Agent
 
 This project implements a Retrieval-Augmented Generation (RAG) agent capable of scraping any website and answering questions based on the scraped content. Example use case: extracting department names and URLs from https://www.ca.gov/topics/ and its subpages.
@@ -6,7 +7,8 @@ This project implements a Retrieval-Augmented Generation (RAG) agent capable of 
 
 - Modular web scraping (requests, BeautifulSoup)
 - Data storage for semantic search (FAISS)
-- LLM integration for question answering (OpenAI API)
+- Local embeddings (sentence-transformers, MiniLM)
+- Optional LLM integration for question answering (Ollama, e.g. Llama 2)
 - Easily extensible to new sites and data types
 
 ## Project Structure
@@ -22,9 +24,11 @@ This project implements a Retrieval-Augmented Generation (RAG) agent capable of 
    ```bash
    pip install -r requirements.txt
    ```
-2. Set your OpenAI API key as an environment variable:
+2. (Optional) For LLM answers, install Ollama and pull a model:
    ```bash
-   export OPENAI_API_KEY=your-key-here
+   # Download and install Ollama from https://ollama.com/download
+   ollama pull llama2
+   ollama serve
    ```
 3. Run the agent:
    ```bash
