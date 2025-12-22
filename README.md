@@ -1,4 +1,3 @@
-
 # Reliable RAG Web Scraper Agent
 
 This project implements a Retrieval-Augmented Generation (RAG) agent capable of scraping any website and answering questions based on the scraped content. Example use case: extracting department names and URLs from https://www.ca.gov/topics/ and its subpages.
