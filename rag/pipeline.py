@@ -28,9 +28,19 @@ class RAGPipeline:
             return [np.zeros(self.embedding_dim).tolist() for _ in texts]
 
     def add_texts(self, texts: List[str]):
-        vectors = self.embed(texts)
-        self.index.add(np.array(vectors).astype('float32'))
-        self.texts.extend(texts)
+            if not texts:
+                print("Warning: No texts provided for embedding. Skipping add_texts.")
+                return
+            vectors = self.embed(texts)
+            arr = np.array(vectors).astype('float32')
+            if arr.size == 0:
+                print("Warning: Embedding returned empty array. Skipping add_texts.")
+                return
+            # If only one text, arr may be 1D; reshape to (1, self.embedding_dim)
+            if arr.ndim == 1:
+                arr = arr.reshape(1, self.embedding_dim)
+            self.index.add(arr)
+            self.texts.extend(texts)
 
     def query(self, question: str, top_k=3) -> List[str]:
         q_vec = self.embed([question])[0]
