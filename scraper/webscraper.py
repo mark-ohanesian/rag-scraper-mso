@@ -44,21 +44,33 @@ class WebScraper:
         soup = BeautifulSoup(resp.text, 'html.parser')
         agency_name = None
         agency_url = None
-        # Look for <main id="main"> and <a href="../../">Department ...</a>
+        dept_page_url = None
+        # Look for <main id="main"> and <a> with department/agency name
         main = soup.find('main', id='main')
         if main:
-            dept_link = main.find('a', href='../../')
+            # Find department/agency link (relative, e.g. '../../')
+            dept_link = None
+            for a in main.find_all('a', href=True):
+                if 'department' in a.get_text(strip=True).lower() or 'agency' in a.get_text(strip=True).lower():
+                    dept_link = a
+                    break
             if dept_link:
                 agency_name = dept_link.get_text(strip=True)
-                # Try to resolve the absolute URL for the department
-                # If the page has a canonical <link rel="canonical">, use that as base
-                canonical = soup.find('link', rel='canonical')
-                base_url = canonical['href'] if canonical and canonical.has_attr('href') else service_url
-                # Remove trailing /services/... from base_url to get department root
-                if '/services/' in base_url:
-                    agency_url = base_url.split('/services/')[0] + '/'
-                else:
-                    agency_url = base_url
+                # Resolve department page URL
+                dept_page_url = requests.compat.urljoin(service_url, dept_link['href'])
+        # If we found a department page, fetch it to get the true agency URL
+        if dept_page_url:
+            try:
+                dept_resp = requests.get(dept_page_url, verify=False)
+                dept_resp.raise_for_status()
+                dept_soup = BeautifulSoup(dept_resp.text, 'html.parser')
+                dept_main = dept_soup.find('main', id='main')
+                if dept_main:
+                    btn = dept_main.find('a', class_='btn btn-primary btn-lg m-r-md m-b', href=True, string=lambda s: s and 'department website' in s.lower())
+                    if btn:
+                        agency_url = btn['href']
+            except Exception as e:
+                print(f"Error fetching department page {dept_page_url}: {e}")
         # Fallback: previous logic for external links
         if not agency_name:
             for a in soup.select('a'):
