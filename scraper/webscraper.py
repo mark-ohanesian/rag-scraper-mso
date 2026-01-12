@@ -42,21 +42,34 @@ class WebScraper:
         resp = requests.get(service_url, verify=False)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, 'html.parser')
-        # Try to find agency/department name and link
         agency_name = None
         agency_url = None
-        # Look for a link to the agency (often in a section with 'Agency' or 'Department')
-        for a in soup.select('a'):
-            href = a.get('href', '')
-            text = a.get_text(strip=True)
-            # Heuristic: agency links are often external and not a ca.gov/services/ link
-            if href and not href.startswith('/services/') and not href.startswith('/topics/') and 'ca.gov' in href:
-                agency_name = text
-                agency_url = href
-                break
+        # Look for <main id="main"> and <a href="../../">Department ...</a>
+        main = soup.find('main', id='main')
+        if main:
+            dept_link = main.find('a', href='../../')
+            if dept_link:
+                agency_name = dept_link.get_text(strip=True)
+                # Try to resolve the absolute URL for the department
+                # If the page has a canonical <link rel="canonical">, use that as base
+                canonical = soup.find('link', rel='canonical')
+                base_url = canonical['href'] if canonical and canonical.has_attr('href') else service_url
+                # Remove trailing /services/... from base_url to get department root
+                if '/services/' in base_url:
+                    agency_url = base_url.split('/services/')[0] + '/'
+                else:
+                    agency_url = base_url
+        # Fallback: previous logic for external links
+        if not agency_name:
+            for a in soup.select('a'):
+                href = a.get('href', '')
+                text = a.get_text(strip=True)
+                if href and not href.startswith('/services/') and not href.startswith('/topics/') and 'ca.gov' in href:
+                    agency_name = text
+                    agency_url = href
+                    break
         # Fallback: look for agency name in text
         if not agency_name:
-            # Try to find a label or heading
             for tag in soup.find_all(['h2', 'h3', 'span', 'div']):
                 txt = tag.get_text(strip=True)
                 if 'agency' in txt.lower() or 'department' in txt.lower():

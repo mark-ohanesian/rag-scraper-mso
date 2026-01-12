@@ -15,6 +15,7 @@ def main():
         agency_info = scraper.get_service_agency(svc['service_url'])
         agency_name = agency_info.get('agency_name', '').strip()
         agency_url = agency_info.get('agency_url', '').strip()
+        print(f"  -> Extracted agency: '{agency_name}' | URL: '{agency_url}'")
         if not agency_name:
             continue
         key = (agency_name, agency_url)
