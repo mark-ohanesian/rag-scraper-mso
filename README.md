@@ -1,21 +1,22 @@
-# Reliable RAG Web Scraper Agent
+# CA.gov RAG Web Scraper Agent
 
-This project implements a Retrieval-Augmented Generation (RAG) agent capable of scraping any website and answering questions based on the scraped content. Example use case: extracting department names and URLs from https://www.ca.gov/topics/ and its subpages.
+This project implements a Retrieval-Augmented Generation (RAG) agent that scrapes all California government services and their provider agencies from [ca.gov](https://www.ca.gov/services/list/), then enables semantic search and Q&A over the results.
 
 ## Features
 
-- Modular web scraping (requests, BeautifulSoup)
-- Data storage for semantic search (FAISS)
-- Local embeddings (sentence-transformers, MiniLM)
-- Optional LLM integration for question answering (Ollama, e.g. Llama 2)
+- Robust web scraping (requests, BeautifulSoup)
+- Extracts all service names and their provider agencies from CA.gov
+- Outputs a single JSON file: agency name, agency website, and a list of service names per agency
+- Local semantic search (sentence-transformers, MiniLM, FAISS)
+- (Optional) LLM integration for question answering (Ollama)
 - Easily extensible to new sites and data types
 
 ## Project Structure
 
-- `scraper/` - Web scraping logic
-- `rag/` - RAG pipeline (vector store, LLM interface)
-- `data/` - Storage for scraped and processed data
-- `main.py` - Entry point for running the agent
+- `scraper/` - Web scraping logic (`webscraper.py`)
+- `rag/` - RAG pipeline (vector store, semantic search, LLM interface)
+- `data/` - Output data (see `agency_services.json`)
+- `main.py` - Entry point for scraping and search
 
 ## Setup
 
@@ -34,10 +35,29 @@ This project implements a Retrieval-Augmented Generation (RAG) agent capable of 
    python main.py
    ```
 
+## Data Output Format
+
+The main output is `data/agency_services.json`, structured as:
+
+```
+[
+  {
+    "agency_name": "Department of Health Care Services",
+    "agency_url": "https://www.dhcs.ca.gov/",
+    "services": [
+      "Access Care",
+      "Apply for Medi-Cal",
+      ...
+    ]
+  },
+  ...
+]
+```
+
 ## Example Usage
 
-- Scrape all department names and URLs for a topic at https://www.ca.gov/topics/assistance/
-- Ask: "Which department handles food stamps?"
+- Scrape all CA.gov services and agencies
+- Ask: "Which agency handles food stamps?"
 
 ---
 
