@@ -18,22 +18,39 @@ This project implements a Retrieval-Augmented Generation (RAG) agent that scrape
 - `data/` - Output data (see `agency_services.json`)
 - `main.py` - Entry point for scraping and search
 
-## Setup
+## Setup (Local)
 
 1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+
+```bash
+pip install -r requirements.txt
+```
+
 2. (Optional) For LLM answers, install Ollama and pull a model:
-   ```bash
-   # Download and install Ollama from https://ollama.com/download
-   ollama pull llama2
-   ollama serve
-   ```
-3. Run the agent:
-   ```bash
-   python main.py
-   ```
+
+```bash
+# Download and install Ollama from https://ollama.com/download
+ollama pull llama2
+ollama serve
+```
+
+3. Run the agent locally:
+
+```bash
+streamlit run app.py
+```
+
+## Deploying & Sharing in the Cloud
+
+You can deploy and share this app with your team using [Streamlit Cloud](https://streamlit.io/cloud):
+
+1. Push your code (including `app.py` and `requirements.txt`) to GitHub.
+2. Go to [Streamlit Cloud](https://streamlit.io/cloud) and connect your repository.
+3. Set `app.py` as the main file when prompted.
+4. Streamlit Cloud will build and deploy your app automatically.
+5. Share the generated Streamlit Cloud URL with your team for easy, browser-based access—no installation required.
+
+---
 
 ## Data Output Format
 
